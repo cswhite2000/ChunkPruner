@@ -53,6 +53,7 @@ public class ChunkPruner extends JavaPlugin {
             logger.info("Processing: " + worldName + ", " + numProcessed + "/" + filePaths.size());
 
             WorldCreator worldCreator = new WorldCreator(worldName);
+            worldCreator.generateStructures(false);
 
             if (Integer.valueOf(Bukkit.getServer().getClass().getPackage().getName().split("_")[1]) > 12 ) {
                 worldCreator.generator(new PruneChunkGenerator1_13());
