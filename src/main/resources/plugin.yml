@@ -1,0 +1,3 @@
+name: ChunkPruner
+main: app.chrisw.mc.ChunkPruner
+version: 1.0.0-SNAPSHOT
