@@ -9,8 +9,10 @@ import org.bukkit.WorldCreator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +31,21 @@ public class ChunkPruner extends JavaPlugin {
         } else {
             if (absolutePath.endsWith("map.xml")) {
                 paths.add(absolutePath.substring(0, absolutePath.length() - 7).replace("/./", "/"));
+            }
+        }
+    }
+
+    public void recursiveProcessEmpty(File file) {
+        String absolutePath = file.getAbsolutePath();
+        if (file.isDirectory()) {
+            for (File listFile : file.listFiles()) {
+                recursiveProcessEmpty(listFile);
+            }
+        } else {
+            if (absolutePath.endsWith(".mca")) {
+                if (file.length() < 1024 * 16) {
+                    file.delete();
+                }
             }
         }
     }
@@ -68,10 +85,15 @@ public class ChunkPruner extends JavaPlugin {
             File[] regionFiles = (new File(filePath + "/region")).listFiles();
 
             List<String> filesToDelete = new ArrayList<>();
+            filesToDelete.add(filePath + "/data/functions");
             filesToDelete.add(filePath + "/data");
             filesToDelete.add(filePath + "/playerdata");
             filesToDelete.add(filePath + "/session.lock");
             filesToDelete.add(filePath + "/uid.dat");
+            filesToDelete.add(filePath + "/DIM1/data");
+            filesToDelete.add(filePath + "/DIM1");
+            filesToDelete.add(filePath + "/DIM-1/data");
+            filesToDelete.add(filePath + "/DIM-1");
 
             // This is pruning
             if (regionFiles != null) {
@@ -131,6 +153,8 @@ public class ChunkPruner extends JavaPlugin {
                 fileToDelete.delete();
             }
         }
-        Bukkit.getScheduler().runTaskLater(this, () -> Bukkit.shutdown(), 5 * 20);
+
+        Bukkit.getScheduler().runTaskLater(this, () -> recursiveProcessEmpty(baseFile), 4 * 20);
+        Bukkit.getScheduler().runTaskLater(this, Bukkit::shutdown, 10 * 20);
     }
 }
