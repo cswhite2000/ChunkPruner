@@ -2,11 +2,15 @@ package app.chrisw.mc;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
+import org.bukkit.ChunkSnapshot;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,7 +53,12 @@ public class ChunkPruner extends JavaPlugin {
             logger.info("Processing: " + worldName + ", " + numProcessed + "/" + filePaths.size());
 
             WorldCreator worldCreator = new WorldCreator(worldName);
-            worldCreator.generator(PruneChunkGenerator.INSTANCE);
+
+            if (Integer.valueOf(Bukkit.getServer().getClass().getPackage().getName().split("_")[1]) > 12 ) {
+                worldCreator.generator(new PruneChunkGenerator1_13());
+            } else {
+                worldCreator.generator(PruneChunkGenerator.INSTANCE);
+            }
 
             World world = worldCreator.createWorld();
 
@@ -62,8 +71,6 @@ public class ChunkPruner extends JavaPlugin {
             filesToDelete.add(filePath + "/playerdata");
             filesToDelete.add(filePath + "/session.lock");
             filesToDelete.add(filePath + "/uid.dat");
-
-//            logger.info(Paths.get(filePath).toFile().getAbsolutePath());
 
             // This is pruning
             if (regionFiles != null) {
@@ -81,17 +88,38 @@ public class ChunkPruner extends JavaPlugin {
 
                     for (int x = minX; x < maxX; x++) {
                         for (int z = minZ; z < maxZ; z++) {
-                            Chunk chunk = world.getWorld().getChunkAt(x, z);
-                            if (!chunk.isEmpty()) {
-                                empty = false;
+                            Chunk chunk = world.getChunkAt(x, z);
+                            ChunkSnapshot chunkSnapshot = chunk.getChunkSnapshot();
+                            for (int chunkX = 0; chunkX < 16; chunkX++) {
+                                for (int chunkZ = 0; chunkZ < 16; chunkZ++) {
+                                    int highestBlockYAt = chunkSnapshot.getHighestBlockYAt(chunkX, chunkZ);
+                                    if (highestBlockYAt > 0) {
+                                        empty = false;
+                                        break;
+                                    } else {
+                                        boolean b;
+                                        try {
+                                            b = chunkSnapshot.getBlockType(chunkX, 0, chunkZ) != Material.AIR;
+                                        } catch (NoSuchMethodError e) {
+                                            try {
+                                                Method getBlockTypeId = ChunkSnapshot.class.getMethod("getBlockTypeId", int.class, int.class, int.class);
+                                                b = 0 != ((int)getBlockTypeId.invoke(chunkSnapshot,chunkX, 0, chunkZ));
+                                            } catch (NoSuchMethodException | InvocationTargetException |
+                                                     IllegalAccessException ex) {
+                                                throw new RuntimeException(ex);
+                                            }
+                                        }
+                                        if (b) {
+                                            empty = false;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
                     if (empty) {
-//                        logger.info("Deleting: " + regionFile.getAbsolutePath());
                         filesToDelete.add(regionFile.getAbsolutePath());
-                    } else {
-//                        logger.info("Keeping: " + regionFile.getAbsolutePath());
                     }
                 }
             }

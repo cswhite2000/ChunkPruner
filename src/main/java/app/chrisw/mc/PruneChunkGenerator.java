@@ -12,7 +12,6 @@ public class PruneChunkGenerator extends ChunkGenerator {
     private PruneChunkGenerator() {
     }
 
-    @Override
     public byte[] generate(final World world, final Random random, final int x, final int z) {
         return CHUNK;
     }
