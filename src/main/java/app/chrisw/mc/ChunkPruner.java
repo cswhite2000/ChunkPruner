@@ -129,7 +129,7 @@ public class ChunkPruner extends JavaPlugin {
                 File fileToDelete = new File(file);
                 fileToDelete.delete();
             }
-
         }
+        Bukkit.getScheduler().runTaskLater(this, () -> Bukkit.shutdown(), 5 * 20);
     }
 }
